@@ -9,4 +9,47 @@ trigger:
 pool:
   vmImage: ubuntu-latest
 
+variables:
+  solution: '**/*.sln'
+  buildPlatform: 'Any CPU'
+  buildConfiguration: 'Release'
+  project: '**/*.csproj'
+
 steps:
+- task: NuGetToolInstaller@1
+  name: 'nugetinstaller'
+  displayName: 'NuGet tool installer'
+
+- task: NuGetCommand@2
+  name: 'nugetrestore'
+  displayName: 'NuGet Restore package'
+  inputs:
+    command: 'restore'
+    restoresolution: '$(solution)'
+    feedsToUse: 'select'
+
+- task: DotNetCoreCLI@2
+  name: 'Tests'
+  displayName: 'Run tests'
+  inputs:
+    command: 'test'
+    projects: '$(solution)'
+    arguments: '--configuration $(BuildConfiguration)'
+
+- task: DotNetCoreCLI@2
+  name: 'publish'
+  displayName: 'publish'
+  inputs:
+    command: 'publish'
+    publishWebProjects: false
+    projects: '$(project)'
+    arguments: '--configuration $(BuildConfiguration) --output $(build.artifactStagingDirectory)'
+    zipAfterPublish: false
+
+- task: PublishBuildArtifacts@1
+  name: 'publishBuildArtifacts'
+  displayName: 'publish Build Artifact'
+  inputs:
+    PathtoPublish: '$(Build.ArtifactStagingDirectory)'
+    ArtifactName: 'AzureTestProject'
+    publishLocation: 'Container'
